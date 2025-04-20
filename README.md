@@ -93,7 +93,9 @@ python análisis_precios.py
 
 ## Detalles del Procesamiento
 ### 1. Carga de Datos
+```python
 df_prices = pd.read_csv(paths['df_prices'])
+```
 Se espera un CSV que contenga al menos las columnas:
 
 - YEAR: Año (numérico)
@@ -183,3 +185,41 @@ df['Regla_Activada'] = np.select(
     ['Regla 1: Precio Alto + Ventas Bajas','Regla 2: Precio Alto + Caída Ventas'],
     default='Sin Oportunidad'
 )
+
+### 8. Generación de Gráfico de Dispersión
+  Eje X: desviacion_precio (%)
+  Eje Y: percentil_ventas (%)
+Puntos en rojo donde se activa alguna regla, gris en caso contrario.
+Líneas de corte vertical en 15% y horizontal en 25% para visualizar “Zona de Oportunidad”.
+
+plt.scatter(...)
+plt.axvline(15, ...)
+plt.axhline(25, ...)
+plt.annotate('Zona de Oportunidad', ...)
+plt.savefig(plot_path, dpi=150, bbox_inches='tight')
+
+### 9. Exportación a Excel
+Se crean tres hojas:
+* Datos_Originales: DataFrame cargado y enriquecido con columnas intermedias.
+* Analisis_Precios: Selección de columnas clave con métricas y regla activada.
+* Visualización: Imagen del gráfico insertada.
+
+with pd.ExcelWriter(..., engine='openpyxl') as writer:
+    ...
+    worksheet = workbook.create_sheet('Visualización')
+    worksheet.add_image(Image(plot_path), 'A1')
+
+## Salida Generada
+1. Archivo Excel: Analisis_Precios_Completo.xlsx
+2. Contiene todas las hojas descritas.
+3. Ideal para compartir con equipos de pricing o análisis comercial.
+
+## Contribuciones
+¡Contribuciones bienvenidas! Si encuentras errores o deseas mejorar el análisis:
+Haz un fork de este repositorio.
+Crea una rama con tu mejora: git checkout -b mejora-analisis.
+Haz commit de tus cambios: git commit -m "Agrego nueva métrica de...".
+Envía un pull request.
+
+## Licencia
+Este proyecto está bajo la MIT License.```
