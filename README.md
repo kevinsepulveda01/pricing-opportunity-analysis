@@ -106,10 +106,13 @@ Se espera un CSV que contenga al menos las columnas:
 - part_nbr1: Código del producto
 
 ### 2. Conversión de Fecha
+
+```python
 df_prices['month_date'] = pd.to_datetime(
     df_prices['YEAR'].astype(str) + '-' +
     df_prices['MONTH'].astype(str).str.zfill(2) + '-01'
 )
+```
 
 Crea la columna month_date con el primer día de cada mes.
 
@@ -120,6 +123,7 @@ Crea la columna month_date con el primer día de cada mes.
   * Mediano: 33%–66%
   * Grande: 66%–100%
 
+```python
 ventas_totales = df_prices.groupby('biz_assoc_id')['cantidad'] \
     .sum().abs().reset_index()
 ventas_totales['dealer_size'] = pd.qcut(
@@ -127,46 +131,57 @@ ventas_totales['dealer_size'] = pd.qcut(
     q=[0, .33, .66, 1],
     labels=['Pequeño','Mediano','Grande']
 )
+```
+```python
 df_prices = df_prices.merge(ventas_totales[['biz_assoc_id','dealer_size']], on='biz_assoc_id')
+```
 
 ### 4. Métricas de Precio
 Precio Mediano por Red (precio_mediano_red): mediana de unit_price_amt por combinación de part_nbr1 y month_date.
 Desviación de Precio (desviacion_precio): diferencia porcentual entre precio del dealer y la mediana de la red.
 
+```python
 df_prices['precio_mediano_red'] = df_prices \
     .groupby(['part_nbr1','month_date'])['unit_price_amt'] \
     .transform('median')
-
+```
+```python
 df_prices['desviacion_precio'] = (
     (df_prices['unit_price_amt'] - df_prices['precio_mediano_red']) /
     df_prices['precio_mediano_red']
 ) * 100
+```
 
 ### 5. Métricas de Ventas (MoM y YoY)
 Calcula ventas absolutas (ventas_abs) como el valor absoluto de cantidad.
 Crecimiento Mes a Mes (growth_ventas_mom): variación porcentual respecto al mes anterior dentro del mismo dealer y producto.
 Crecimiento Año a Año (growth_ventas_yoy): variación porcentual respecto al mismo mes del año anterior.
 
-
+```python
 df_prices = df_prices.sort_values(['biz_assoc_id','part_nbr1','month_date'])
-
+```
+```python
 df_prices['ventas_abs'] = df_prices['cantidad'].abs()
-
+```
+```python
 df_prices['ventas_mes_anterior'] = df_prices \
     .groupby(['biz_assoc_id','part_nbr1'])['ventas_abs'] \
     .shift(1)
-    
+```
+```python
 df_prices['growth_ventas_mom'] = (
     (df_prices['ventas_abs'] - df_prices['ventas_mes_anterior']) /
     df_prices['ventas_mes_anterior']
 ) * 100
+```
 
 # Similar para YoY, empalmando con copia del df desplazada un año atrás
 ### 6. Percentil de Ventas
-
+```python
 df_prices['percentil_ventas'] = df_prices \
     .groupby(['part_nbr1','month_date'])['ventas_abs'] \
     .rank(pct=True) * 100
+```
 Posiciona cada dealer dentro de la distribución de ventas de ese producto/mes.
 
 ### 7. Aplicación de Reglas de Oportunidad
@@ -179,12 +194,13 @@ Se definen dos reglas:
   desviacion_precio > 15%
   caída Month‑on‑Month (growth_ventas_mom < -10%) o caída Year‑on‑Year (growth_ventas_yoy < -20%)
 
-
+```python
 df['Regla_Activada'] = np.select(
     [cond1, cond2_mom|cond2_yoy],
     ['Regla 1: Precio Alto + Ventas Bajas','Regla 2: Precio Alto + Caída Ventas'],
     default='Sin Oportunidad'
 )
+```
 
 ### 8. Generación de Gráfico de Dispersión
   Eje X: desviacion_precio (%)
@@ -204,10 +220,12 @@ Se crean tres hojas:
 * Analisis_Precios: Selección de columnas clave con métricas y regla activada.
 * Visualización: Imagen del gráfico insertada.
 
+```python
 with pd.ExcelWriter(..., engine='openpyxl') as writer:
     ...
     worksheet = workbook.create_sheet('Visualización')
     worksheet.add_image(Image(plot_path), 'A1')
+```
 
 ## Salida Generada
 1. Archivo Excel: Analisis_Precios_Completo.xlsx
