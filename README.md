@@ -53,3 +53,18 @@ Puedes instalar las dependencias con:
 
 ```bash
 pip install pandas numpy matplotlib openpyxl
+
+---
+
+## Estructura de Archivos
+
+├── análisis_precios.py       # Script principal
+├── datos/                    # Carpeta para datos de entrada y salida
+│   ├── precios.csv           # CSV de ejemplo de precios y ventas
+│   └── Analisis_Precios_Completo.xlsx  # Salida generada
+└── README.md                 # Documentación (este archivo)
+
+---
+
+
+
