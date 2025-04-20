@@ -127,4 +127,59 @@ ventas_totales['dealer_size'] = pd.qcut(
 )
 df_prices = df_prices.merge(ventas_totales[['biz_assoc_id','dealer_size']], on='biz_assoc_id')
 
----
+### 4. Métricas de Precio
+Precio Mediano por Red (precio_mediano_red): mediana de unit_price_amt por combinación de part_nbr1 y month_date.
+Desviación de Precio (desviacion_precio): diferencia porcentual entre precio del dealer y la mediana de la red.
+
+df_prices['precio_mediano_red'] = df_prices \
+    .groupby(['part_nbr1','month_date'])['unit_price_amt'] \
+    .transform('median')
+
+df_prices['desviacion_precio'] = (
+    (df_prices['unit_price_amt'] - df_prices['precio_mediano_red']) /
+    df_prices['precio_mediano_red']
+) * 100
+
+### 5. Métricas de Ventas (MoM y YoY)
+Calcula ventas absolutas (ventas_abs) como el valor absoluto de cantidad.
+Crecimiento Mes a Mes (growth_ventas_mom): variación porcentual respecto al mes anterior dentro del mismo dealer y producto.
+Crecimiento Año a Año (growth_ventas_yoy): variación porcentual respecto al mismo mes del año anterior.
+
+
+df_prices = df_prices.sort_values(['biz_assoc_id','part_nbr1','month_date'])
+
+df_prices['ventas_abs'] = df_prices['cantidad'].abs()
+
+df_prices['ventas_mes_anterior'] = df_prices \
+    .groupby(['biz_assoc_id','part_nbr1'])['ventas_abs'] \
+    .shift(1)
+    
+df_prices['growth_ventas_mom'] = (
+    (df_prices['ventas_abs'] - df_prices['ventas_mes_anterior']) /
+    df_prices['ventas_mes_anterior']
+) * 100
+
+# Similar para YoY, empalmando con copia del df desplazada un año atrás
+### 6. Percentil de Ventas
+
+df_prices['percentil_ventas'] = df_prices \
+    .groupby(['part_nbr1','month_date'])['ventas_abs'] \
+    .rank(pct=True) * 100
+Posiciona cada dealer dentro de la distribución de ventas de ese producto/mes.
+
+### 7. Aplicación de Reglas de Oportunidad
+Se definen dos reglas:
+#### Regla 1: Precio Alto + Ventas Bajas
+  desviacion_precio > 20%
+  percentil_ventas < 25%
+
+#### Regla 2: Precio Alto + Caída Ventas
+  desviacion_precio > 15%
+  caída Month‑on‑Month (growth_ventas_mom < -10%) o caída Year‑on‑Year (growth_ventas_yoy < -20%)
+
+
+df['Regla_Activada'] = np.select(
+    [cond1, cond2_mom|cond2_yoy],
+    ['Regla 1: Precio Alto + Ventas Bajas','Regla 2: Precio Alto + Caída Ventas'],
+    default='Sin Oportunidad'
+)
