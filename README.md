@@ -53,10 +53,10 @@ Puedes instalar las dependencias con:
 
 ```bash
 pip install pandas numpy matplotlib openpyxl
-
+```
 ---
 
-## Estructura de Archivos
+## Estructura 
 
 ├── análisis_precios.py       # Script principal
 ├── datos/                    # Carpeta para datos de entrada y salida
@@ -66,5 +66,65 @@ pip install pandas numpy matplotlib openpyxl
 
 ---
 
+## Instalación
+1. Clona este repositorio:
+```bash
+git clone https://github.com/tu_usuario/analisis-precios.git
+cd analisis-precios
+```
+2. Crea un entorno virtual (opcional pero recomendado):
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+```
+3. Instala dependencias.
+```bash
+pip install -r requirements.txt
+```
+---
 
+## Uso
+Edita la ruta de paths['df_prices'] dentro del script análisis_precios.py para apuntar a tu archivo CSV de datos y define también plot_path y la ruta de salida del Excel. Luego ejecuta:
+```bash
+python análisis_precios.py
+```
+---
 
+## Detalles del Procesamiento
+### 1. Carga de Datos
+df_prices = pd.read_csv(paths['df_prices'])
+Se espera un CSV que contenga al menos las columnas:
+
+- YEAR: Año (numérico)
+- MONTH: Mes (número del 1 al 12)
+- cantidad: Volumen de ventas (puede ser negativo o positivo)
+- unit_price_amt: Precio unitario
+- biz_assoc_id: Identificador del dealer
+- part_nbr1: Código del producto
+
+### 2. Conversión de Fecha
+df_prices['month_date'] = pd.to_datetime(
+    df_prices['YEAR'].astype(str) + '-' +
+    df_prices['MONTH'].astype(str).str.zfill(2) + '-01'
+)
+
+Crea la columna month_date con el primer día de cada mes.
+
+### 3. Cálculo de Tamaño de Dealer
+1. Suma absoluta de ventas (cantidad) por biz_assoc_id.
+2. Cuantiles al 33% y 66% para clasificar:
+  * Pequeño: hasta 33%
+  * Mediano: 33%–66%
+  * Grande: 66%–100%
+
+ventas_totales = df_prices.groupby('biz_assoc_id')['cantidad'] \
+    .sum().abs().reset_index()
+ventas_totales['dealer_size'] = pd.qcut(
+    ventas_totales['cantidad'],
+    q=[0, .33, .66, 1],
+    labels=['Pequeño','Mediano','Grande']
+)
+df_prices = df_prices.merge(ventas_totales[['biz_assoc_id','dealer_size']], on='biz_assoc_id')
+
+---
