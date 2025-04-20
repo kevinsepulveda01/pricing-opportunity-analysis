@@ -58,10 +58,8 @@ pip install pandas numpy matplotlib openpyxl
 
 ## Estructura 
 
-├── análisis_precios.py       # Script principal
-├── datos/                    # Carpeta para datos de entrada y salida
-│   ├── precios.csv           # CSV de ejemplo de precios y ventas
-│   └── Analisis_Precios_Completo.xlsx  # Salida generada
+├── Price_Oportunity.py       # Script principal
+├── requirements.txt          # Archivo de texto con las dependencias necesarias
 └── README.md                 # Documentación (este archivo)
 
 ---
